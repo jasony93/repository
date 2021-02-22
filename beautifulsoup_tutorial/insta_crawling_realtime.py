@@ -40,6 +40,14 @@ def insta_login(id=ID, pwd=PWD):
         print('passed')
         pass
 
+def prompt_id():
+    global driver
+    id = input('크롤링할 아이디를 입력하세요 : ')
+    url = 'https://www.instagram.com/{}/'.format(id)
+    driver.get(url)
+    time.sleep(1)
+    return id
+
 def profile():
     global driver
     driver.find_element_by_xpath('//*[@id="react-root"]/section/nav/div[2]/div/div/div[3]/div/div[5]/span/img').click()
@@ -54,50 +62,74 @@ def get_follows():
     follows = driver.find_elements_by_xpath('/html/body/div[4]/div/div/div[2]/ul/div/li/div/div[2]/div[1]/div/div/span/a')
     follows_arr = [f.text for f in follows]
     return follows_arr
-    
-def download_pics(follows_arr):
+
+def first_download(id):
     global driver
 
-    for follow in follows_arr:
+    if not os.path.exists('img/{}'.format(id)):
+        os.makedirs('img/{}'.format(id))
+    
+    driver.get("https://www.instagram.com/{}".format(id))
 
-        SCROLL_FLAG = True
+    SCROLL_FLAG = True
+    time.sleep(1)
 
-        print(follow, SCROLL_FLAG)
+    while SCROLL_FLAG:
+
+        if scroll_down() is not True:
+            SCROLL_FLAG = False
         
-        if not os.path.exists('img/{}'.format(follow)):
-            os.makedirs('img/{}'.format(follow))
-        
-        driver.get("https://www.instagram.com/{}".format(follow))
+        print(SCROLL_FLAG)
 
-        while SCROLL_FLAG:
+        html = driver.page_source
+        soup = BeautifulSoup(html, 'html.parser')   
+        pics = soup.find_all('img', attrs={'class':'FFVAD'})
 
-            if scroll_down() is not True:
-                SCROLL_FLAG = False
+        for p in pics:
             
-            print(SCROLL_FLAG)
+            try:
+                imgUrl = p['src']
+                # print(imgUrl)
+            except:
+                print('no src')
+                pass
+            
+            with urllib.request.urlopen(imgUrl) as f:
+                with open('./img/{}/'.format(id) + imgUrl[-8:] + '.jpg', 'wb') as h:
+                    img = f.read()
+                    h.write(img)
 
-            html = driver.page_source
-            soup = BeautifulSoup(html, 'html.parser')   
-            pics = soup.find_all('img', attrs={'class':'FFVAD'})
 
-            for p in pics:
-                
-                try:
-                    imgUrl = p['src']
-                    # print(imgUrl)
-                except:
-                    print('no src')
-                    pass
-                
-                with urllib.request.urlopen(imgUrl) as f:
-                    with open('./img/{}/'.format(follow) + imgUrl[-8:] + '.jpg', 'wb') as h:
-                        img = f.read()
-                        h.write(img)
+
+def download_realtime(id):
+    global driver
+
+    while True:
+
+        driver.refresh()
+        html = driver.page_source
+        soup = BeautifulSoup(html, 'html.parser')   
+        pics = soup.find_all('img', attrs={'class':'FFVAD'})
+
+        for p in pics:
+            
+            try:
+                imgUrl = p['src']
+                # print(imgUrl)
+            except:
+                print('no src')
+                pass
+            
+            with urllib.request.urlopen(imgUrl) as f:
+                with open('./img/{}/'.format(id) + imgUrl[-8:] + '.jpg', 'wb') as h:
+                    img = f.read()
+                    h.write(img)
+
+        time.sleep(30)
         
     
 driver = webdriver.Chrome()  
+id = input('크롤링할 아이디를 입력하세요 : ')
 insta_login()
-profile()
-follows_arr = get_follows()
-print(follows_arr)
-download_pics(follows_arr)
+first_download(id)
+download_realtime(id)
