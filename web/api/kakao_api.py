@@ -1,10 +1,20 @@
 import requests
 import json
 
-code = "rRTF0rkOzMjbgaz3B5z3BYAbEjwg5K_qBo7GLTQWb5GpjsODPPcO-BNcIaHgCsna6qc5IQo9dNkAAAF3z1s79A"
-app_key = "1df5d2e5f8634735c25cf4f37d4df7d0"
+code = "VyPLXKKWJZuRsnk04roh2yycldXhzmhCiRMpd7AGVXiE3JkdEclGowtXU9vPB33895aU3wopcJ8AAAF31ERTLQ"
+app_key = "002844830aaef71b10290a14eaa18f09"
+authorize_url = "https://kauth.kakao.com/oauth/authorize"
 url = "https://kauth.kakao.com/oauth/token"
 send_url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
+redirect_uri = "https://localhost.com"
+
+
+def get_authorize_code(client_id=app_key, redirect_uri=redirect_uri):
+
+    response = requests.get(authorize_url + '?client_id={}&redirect_uri={}\
+        &response_type=code'.format(client_id, redirect_uri))
+
+    print(response.url)
 
 
 def get_access_token(app_key=app_key, code=code, url=url):
@@ -33,7 +43,7 @@ def message_myself(url=send_url):
     print(tokens)
 
     headers = {
-        "Authorization": "Bearer " + tokens['access_token']
+        "Authorization": "Bearer " + tokens['refresh_token']
     }
 
     data = {
@@ -52,6 +62,6 @@ def message_myself(url=send_url):
 
 message_myself()
 # get_access_token()
-
+# get_authorize_code()
 
 # print(tokens)
