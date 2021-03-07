@@ -1,86 +1,180 @@
-import os
-import sys
+# import os
+# import sys
 import urllib.request
 import json
 import re
-from urllib.request import urlopen
+# from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import requests
+import pandas as pd
+# import pandas.DataFrame
 
 client_id = "PGRfCTKzm4hKNt5VyMWv"
 client_secret = "oVQoKJxgTV"
-keyword = input("검색할 단어를 입력해주세요: ")
-encText = urllib.parse.quote(keyword)
-url = "https://openapi.naver.com/v1/search/blog?query=" + \
-    encText + "&display=100"  # json 결과
-# url = "https://openapi.naver.com/v1/search/blog.xml?query=" + encText # xml 결과
-request = urllib.request.Request(url)
-request.add_header("X-Naver-Client-Id", client_id)
-request.add_header("X-Naver-Client-Secret", client_secret)
-response = urllib.request.urlopen(request)
-rescode = response.getcode()
-if(rescode == 200):
-    response_body = response.read()
-    # print(response_body.decode('utf-8'))
-    json_data = json.loads(response_body.decode('utf-8'))
-else:
-    print("Error Code:" + rescode)
+keywords = input("검색할 단어들을 입력해주세요: ")
 
-links = [i['link'] for i in json_data['items']]
-# for i in json_data['items']:
-# print(i['link'])
-# print(json_data['items'])
-# print(links)
+keyword_arr = keywords.split(',')
 
-# soup = BeautifulSoup(urllib.request.urlopen(
-#     'http://movie.naver.com/movie/sdb/rank/rmovie.nhn?sel=pnt&date=20161120').read(), 'html.parser')
-# res = soup.find_all('div', 'tit5')
-# print(res)
+for keyword in keyword_arr:
+    phone_numbers = []
+    encText = urllib.parse.quote(keyword)
 
-for link in links:
+    for i in range(1, 50, 99):
+        print('start index: ', i)
+        url_blog = "https://openapi.naver.com/v1/search/blog?query=" + \
+            encText + "&display=100&start={}&sort=sim".format(i)  # json 결과
 
-    link = link.replace('amp;', "")
-    # get_blog_post_content_code = requests.get(link)
-    # get_blog_post_content_text = get_blog_post_content_code.text
+        try:
 
-    # # print(get_blog_post_content_text)
+            request = urllib.request.Request(url_blog)
+            request.add_header("X-Naver-Client-Id", client_id)
+            request.add_header("X-Naver-Client-Secret", client_secret)
+            response = urllib.request.urlopen(request)
+            rescode = response.getcode()
+            if(rescode == 200):
+                response_body = response.read()
+                # print(response_body.decode('utf-8'))
+                json_data = json.loads(response_body.decode('utf-8'))
+            else:
+                print("Error Code:" + rescode)
 
-    # get_blog_post_content_soup = BeautifulSoup(
-    #     get_blog_post_content_text, 'lxml')
+            links = [i['link'] for i in json_data['items']]
 
-    # select = get_blog_post_content_soup.select('frame#mainFrame')
-    # print(select)
+            for link in links:
 
-    blog_post_url = link
+                try:
 
-    get_blog_post_content_code = requests.get(blog_post_url)
-    get_blog_post_content_text = get_blog_post_content_code.text
+                    link = link.replace('amp;', "")
+                    blog_post_url = link
+                    get_blog_post_content_code = requests.get(blog_post_url)
+                    get_blog_post_content_text = get_blog_post_content_code.text
+                    get_blog_post_content_soup = BeautifulSoup(
+                        get_blog_post_content_text, 'lxml')
 
-    get_blog_post_content_soup = BeautifulSoup(
-        get_blog_post_content_text, 'lxml')
+                    select = get_blog_post_content_soup.find('iframe')
+                    new_link = 'https://blog.naver.com' + select['src']
+                    html = urllib.request.urlopen(new_link)
+                    soup = BeautifulSoup(html, 'html.parser')
+                    matches = soup.find_all(
+                        string=re.compile('010-\d{4}-\d{4}'))
 
-    select = get_blog_post_content_soup.find('iframe')
-    # print(select.extract())
-    new_link = 'https://blog.naver.com' + select['src']
+                except:
+                    pass
 
-    html = urlopen(new_link)
-    # print(html)
-    soup = BeautifulSoup(html, 'html.parser')
-    # print(soup)
-    # for link in get_blog_post_content_soup.select('frame#mainFrame'):
-    #     real_blog_post_url = "http://blog.naver.com" + link.get('src')
+                for match in matches:
+                    match_index = match.find('010')
+                    print(match[match_index:match_index + 13])
+                    phone_numbers.append(match[match_index:match_index + 13])
 
-    #     get_real_blog_post_content_code = requests.get(real_blog_post_url)
-    #     print(get_real_blog_post_content_code)
-    #     get_real_blog_post_content_text = get_real_blog_post_content_code.text
-    #     print(get_real_blog_post_content_text)
-    #     get_real_blog_post_content_soup = BeautifulSoup(
-    #         get_real_blog_post_content_text, 'lxml')
-    # print(get_blog_post_content_soup)
-    # html = urlopen(link)
-    # # request = urllib.request.urlopen(link)
-    # print(html)
-    # soup = BeautifulSoup(html, 'html.parser')
-    # print(soup)
-    matches = soup.find_all(string=re.compile('/^\d{3}-\d{3,4}-\d{4}$/'))
-    print(matches)
+        except:
+            pass
+
+    for i in range(1, 50, 99):
+        print('start index: ', i)
+        url_blog = "https://openapi.naver.com/v1/search/blog?query=" + \
+            encText + "&display=100&start={}&sort=date".format(i)  # json 결과
+
+        try:
+
+            request = urllib.request.Request(url_blog)
+            request.add_header("X-Naver-Client-Id", client_id)
+            request.add_header("X-Naver-Client-Secret", client_secret)
+            response = urllib.request.urlopen(request)
+            rescode = response.getcode()
+            if(rescode == 200):
+                response_body = response.read()
+                # print(response_body.decode('utf-8'))
+                json_data = json.loads(response_body.decode('utf-8'))
+            else:
+                print("Error Code:" + rescode)
+
+            links = [i['link'] for i in json_data['items']]
+
+            for link in links:
+
+                try:
+
+                    link = link.replace('amp;', "")
+                    blog_post_url = link
+                    get_blog_post_content_code = requests.get(blog_post_url)
+                    get_blog_post_content_text = get_blog_post_content_code.text
+                    get_blog_post_content_soup = BeautifulSoup(
+                        get_blog_post_content_text, 'lxml')
+
+                    select = get_blog_post_content_soup.find('iframe')
+                    new_link = 'https://blog.naver.com' + select['src']
+                    html = urllib.request.urlopen(new_link)
+                    soup = BeautifulSoup(html, 'html.parser')
+                    matches = soup.find_all(
+                        string=re.compile('010-\d{4}-\d{4}'))
+
+                except:
+                    pass
+
+                for match in matches:
+                    match_index = match.find('010')
+                    print(match[match_index:match_index + 13])
+                    phone_numbers.append(match[match_index:match_index + 13])
+
+        except:
+            pass
+
+    df = pd.DataFrame(phone_numbers, columns=['phone_numbers'])
+    df.to_csv("{}.csv".format(keyword), index=False)
+
+# for i in range(1, 500, 99):
+#     print('start index: ', i)
+#     url_caffe = "https://openapi.naver.com/v1/search/cafearticle.json?query=" + \
+#         encText + "&display=30&start={}".format(i)
+
+#     request = urllib.request.Request(url_caffe)
+#     request.add_header("X-Naver-Client-Id", client_id)
+#     request.add_header("X-Naver-Client-Secret", client_secret)
+#     response = urllib.request.urlopen(request)
+#     rescode = response.getcode()
+#     if(rescode == 200):
+#         response_body = response.read()
+#         # print(response_body)
+#         # print(response_body.decode('utf-8'))
+#         json_data = json.loads(response_body.decode('utf-8'))
+#         # print(json_data)
+#     else:
+#         print("Error Code:" + rescode)
+
+#     links = [i['link'] for i in json_data['items']]
+
+#     # print(links)
+
+#     for link in links:
+
+#         link = link.replace('amp;', "")
+#         blog_post_url = link
+#         get_blog_post_content_code = requests.get(blog_post_url)
+#         get_blog_post_content_text = get_blog_post_content_code.text
+#         # print(get_blog_post_content_text)
+#         # print(get_blog_post_content_text)
+#         get_blog_post_content_soup = BeautifulSoup(
+#             get_blog_post_content_text, 'lxml')
+#         # print(get_blog_post_content_soup)
+#         select = get_blog_post_content_soup.find(
+#             'input', attrs={'name': 'clubid'})
+
+#         link_split = link.split('/')
+#         article_id = link_split[-1]
+#         # print('article_id: ', article_id, '  club_id: ', select['value'])
+#         # print(select)
+#         new_link = 'https://cafe.naver.com/ArticleRead.nhn?articleid={}&clubid={}'.format(
+#             article_id, select['value'])
+#         # print(new_link)
+#         html = urllib.request.urlopen(new_link)
+#         soup = BeautifulSoup(html, 'html.parser')
+#         # print(soup)
+#         matches = soup.find_all(string=re.compile('010-\d{4}-\d{4}'))
+
+#         for match in matches:
+#             match_index = match.find('010')
+#             print(match[match_index:])
+#             phone_numbers.append(match[match_index:])
+
+
+# //cafe.naver.com/ArticleRead.nhn?articleid=1830954&clubid=21031223
